@@ -1,0 +1,40 @@
+import { Queue } from 'bull';
+import { FastifyReply } from 'fastify';
+import { RouteService } from '../routes/route.service';
+import { TransformerService } from '../transformers/transformer.service';
+import { CredentialService } from '../credentials/credential.service';
+import { RateLimiterService } from '../rate-limiter/rate-limiter.service';
+import { CircuitBreakerService } from '../circuit-breaker/circuit-breaker.service';
+import { RequestLogService } from '../request-logs/request-log.service';
+import { BusinessTableService } from '../business-data/business-table.service';
+import { TableRowService } from '../business-data/table-row.service';
+import { ConfigService } from '../config/config.service';
+export declare class GatewayService {
+    private readonly routeService;
+    private readonly transformerService;
+    private readonly credentialService;
+    private readonly rateLimiterService;
+    private readonly circuitBreakerService;
+    private readonly requestLogService;
+    private readonly businessTableService;
+    private readonly tableRowService;
+    private readonly configService;
+    private readonly asyncQueue;
+    private readonly logger;
+    private readonly ASYNC_BIZ_TABLE_THRESHOLD;
+    private readonly ASYNC_BIZ_FIELD_THRESHOLD;
+    constructor(routeService: RouteService, transformerService: TransformerService, credentialService: CredentialService, rateLimiterService: RateLimiterService, circuitBreakerService: CircuitBreakerService, requestLogService: RequestLogService, businessTableService: BusinessTableService, tableRowService: TableRowService, configService: ConfigService, asyncQueue: Queue);
+    handleRequest(transitId: string, body: any, clientIp: string, reply: FastifyReply): Promise<{
+        streamed: boolean;
+        data: any;
+    }>;
+    private resolveRoute;
+    private checkRateLimit;
+    private handleAsync;
+    private transformRequest;
+    private dispatchToTarget;
+    private pipeStreamToReply;
+    private collectStreamToJson;
+    private persistBusinessData;
+    private extractField;
+}

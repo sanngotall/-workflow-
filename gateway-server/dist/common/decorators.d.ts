@@ -1,0 +1,10 @@
+export declare const IS_PUBLIC_KEY = "isPublic";
+export declare const PERMISSION_KEY = "permission";
+export declare const GLOBAL_ROLE_KEY = "globalRole";
+export declare const SELF_OR_PERMISSION_KEY = "selfOrPermission";
+export declare const PROJECT_ID_PARAM_KEY = "projectIdParam";
+export declare const Public: () => import("@nestjs/common").CustomDecorator<string>;
+export declare const RequirePermission: (permission: string) => import("@nestjs/common").CustomDecorator<string>;
+export declare const RequireGlobalRole: (...roles: string[]) => import("@nestjs/common").CustomDecorator<string>;
+export declare const SelfOrPermission: (permission: string) => import("@nestjs/common").CustomDecorator<string>;
+export declare const ProjectIdParam: (paramName: string) => import("@nestjs/common").CustomDecorator<string>;

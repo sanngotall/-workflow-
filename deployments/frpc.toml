@@ -1,0 +1,71 @@
+# FRP 客户端配置文件 - 端端通测试服务器
+# 文件路径: /etc/frp/frpc.toml
+# 执行操纵: [[AGENTS.md]]
+
+# 基础配置 - FRP Server 端口保持 7000 不变
+transport.protocol = "tcp"
+serverAddr = "139.155.143.173"
+serverPort = 7000
+auth.token = "iuadbi@983$*(#)"
+
+# 网关 API 服务 - 核心业务端口
+[[proxies]]
+name = "ddt-gateway-api"
+type = "tcp"
+localIP = "127.0.0.1"
+localPort = 13000
+remotePort = 13000
+transport.useCompression = true
+transport.useEncryption = true
+
+# 前端管理后台 - Nginx HTTP 入口
+[[proxies]]
+name = "ddt-admin-dashboard-http"
+type = "tcp"
+localIP = "127.0.0.1"
+localPort = 18880
+remotePort = 18880
+transport.useCompression = true
+transport.useEncryption = true
+
+# 前端管理后台 - Nginx HTTPS 入口
+[[proxies]]
+name = "ddt-admin-dashboard-https"
+type = "tcp"
+localIP = "127.0.0.1"
+localPort = 18443
+remotePort = 18443
+transport.useCompression = true
+transport.useEncryption = true
+
+# PostgreSQL 数据库 - 仅用于远程调试（可选）
+# 生产环境建议关闭此端口，避免数据库直接暴露
+[[proxies]]
+name = "ddt-postgres-debug"
+type = "tcp"
+localIP = "127.0.0.1"
+localPort = 15432
+remotePort = 15432
+transport.useCompression = true
+transport.useEncryption = true
+
+# Redis 缓存服务 - 仅用于远程调试（可选）
+# 生产环境建议关闭此端口，避免缓存直接暴露
+[[proxies]]
+name = "ddt-redis-debug"
+type = "tcp"
+localIP = "127.0.0.1"
+localPort = 16379
+remotePort = 16379
+transport.useCompression = true
+transport.useEncryption = true
+
+# SSH 访问 - 远程管理端口（localPort 22 保持不变）
+[[proxies]]
+name = "ddt-ssh"
+type = "tcp"
+localIP = "127.0.0.1"
+localPort = 22
+remotePort = 3022
+transport.useCompression = true
+transport.useEncryption = true

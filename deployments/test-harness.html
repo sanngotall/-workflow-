@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>DDT 端端通 · 全链路测试工具页</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    /* ============================================================
+     * 全局样式：极简深色控制台风格，便于调试阅读
+     * ============================================================ */
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; padding: 16px;
+      font-family: 'JetBrains Mono', 'Cascadia Code', 'Consolas', 'Source Han Sans CN', sans-serif;
+      background: #0f172a; color: #e2e8f0;
+      font-size: 13px; line-height: 1.5;
+    }
+    h1 {
+      font-size: 18px; margin: 0 0 12px;
+      padding-bottom: 8px; border-bottom: 1px solid #334155;
+      color: #38bdf8;
+    }
+    h2 {
+      font-size: 14px; margin: 20px 0 8px;
+      color: #a78bfa; text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    .meta { color: #64748b; font-size: 12px; margin-bottom: 12px; }
+    .meta a { color: #38bdf8; }
+
+    /* 全局状态面板 */
+    .config-bar {
+      background: #1e293b; border: 1px solid #334155;
+      border-radius: 6px; padding: 10px 12px; margin-bottom: 12px;
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 8px; align-items: end;
+    }
+    .config-bar label {
+      display: block; color: #94a3b8; font-size: 11px; margin-bottom: 3px;
+    }
+    .config-bar input {
+      width: 100%; padding: 6px 8px;
+      background: #0f172a; color: #e2e8f0; border: 1px solid #334155;
+      border-radius: 4px; font-family: inherit; font-size: 12px;
+    }
+    .config-bar input:focus { outline: none; border-color: #38bdf8; }
+
+    .state-bar {
+      background: #1e293b; border: 1px solid #334155;
+      border-radius: 6px; padding: 8px 12px; margin-bottom: 12px;
+      font-size: 12px; display: flex; flex-wrap: wrap; gap: 16px;
+    }
+    .state-bar .kv { color: #94a3b8; }
+    .state-bar .kv strong { color: #38bdf8; font-weight: 500; word-break: break-all; }
+
+    /* 测试用例区段 */
+    .section {
+      background: #1e293b; border: 1px solid #334155;
+      border-radius: 6px; padding: 10px 12px; margin-bottom: 10px;
+    }
+    .section-title {
+      font-size: 13px; color: #f1f5f9; margin-bottom: 6px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .section-title .badge {
+      display: inline-block; padding: 1px 6px;
+      background: #312e81; color: #c7d2fe;
+      border-radius: 3px; font-size: 10px; font-weight: 600;
+    }
+    .section-title .badge.get { background: #064e3b; color: #6ee7b7; }
+    .section-title .badge.post { background: #1e3a8a; color: #93c5fd; }
+    .section-title .badge.put { background: #78350f; color: #fcd34d; }
+    .section-title .badge.delete { background: #7f1d1d; color: #fca5a5; }
+    .section-desc { color: #64748b; font-size: 11px; margin-bottom: 8px; }
+
+    button {
+      background: #3b82f6; color: white; border: none;
+      padding: 6px 12px; border-radius: 4px; cursor: pointer;
+      font-family: inherit; font-size: 12px; font-weight: 500;
+      transition: background 0.15s;
+    }
+    button:hover { background: #2563eb; }
+    button:disabled { background: #475569; cursor: not-allowed; }
+    button.secondary { background: #475569; }
+    button.secondary:hover { background: #64748b; }
+    button.danger { background: #dc2626; }
+    button.danger:hover { background: #b91c1c; }
+    button.success { background: #16a34a; }
+    button.success:hover { background: #15803d; }
+
+    .button-row { display: flex; flex-wrap: wrap; gap: 6px; }
+
+    /* JSON 输出 */
+    pre.output {
+      background: #020617; color: #93c5fd;
+      border: 1px solid #1e293b; border-radius: 4px;
+      padding: 8px 10px; margin: 6px 0 0;
+      font-size: 11px; max-height: 320px; overflow: auto;
+      white-space: pre-wrap; word-break: break-all;
+    }
+    pre.output.error { color: #fca5a5; border-color: #7f1d1d; }
+    pre.output.success { color: #6ee7b7; border-color: #064e3b; }
+
+    .status-pill {
+      display: inline-block; padding: 1px 6px;
+      border-radius: 3px; font-size: 10px; font-weight: 600;
+      margin-left: 6px;
+    }
+    .status-pill.ok { background: #064e3b; color: #6ee7b7; }
+    .status-pill.fail { background: #7f1d1d; color: #fca5a5; }
+    .status-pill.pending { background: #78350f; color: #fcd34d; }
+
+    .toolbar {
+      position: sticky; top: 0; z-index: 10;
+      background: #0f172a; padding: 8px 0;
+      border-bottom: 1px solid #334155; margin-bottom: 12px;
+      display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+    }
+    .toolbar .spacer { flex: 1; }
+    .footer {
+      color: #475569; font-size: 11px; margin-top: 24px;
+      padding-top: 12px; border-top: 1px solid #1e293b;
+    }
+  </style>
+</head>
+<body>
+  <h1>DDT 端端通 · 全链路测试工具页</h1>
+  <div class="meta">
+    对齐 SPEC-04 API 契约 · 用于本机 Docker 调试环境快速回归验证 ·
+    后端默认 <code>http://localhost:13000</code>（<code>docker-compose.dev.yml</code>）
+  </div>
+
+  <!-- ============ 全局工具栏 ============ -->
+  <div class="toolbar">
+    <button class="success" onclick="runAllSequential()">▶ 一键串行全链路</button>
+    <button class="secondary" onclick="clearAllOutputs()">清空输出</button>
+    <button class="secondary" onclick="copyToken()">复制 Token</button>
+    <span class="spacer"></span>
+    <span id="globalStatus" class="status-pill pending">未登录</span>
+  </div>
+
+  <!-- ============ 全局配置 ============ -->
+  <div class="config-bar">
+    <div>
+      <label>后端 BaseURL</label>
+      <input id="baseUrl" value="http://localhost:13000" />
+    </div>
+    <div>
+      <label>用户名</label>
+      <input id="username" value="admin" />
+    </div>
+    <div>
+      <label>密码</label>
+      <input id="password" value="D%)MM25EB4v^5}d-" type="text" />
+    </div>
+    <div>
+      <label>项目 ID（运行后自动填充）</label>
+      <input id="projectId" placeholder="登录后创建或选择项目" />
+    </div>
+    <div>
+      <label>中转 ID（route.id）</label>
+      <input id="transitId" placeholder="创建路由后自动填充" />
+    </div>
+    <div>
+      <label>微信 AppID</label>
+      <input id="wxAppId" placeholder="可选，用于微信配置测试" />
+    </div>
+  </div>
+
+  <!-- ============ 全局状态 ============ -->
+  <div class="state-bar">
+    <span class="kv">access_token: <strong id="tokenView">—</strong></span>
+    <span class="kv">当前项目: <strong id="projectView">—</strong></span>
+    <span class="kv">当前中转: <strong id="transitView">—</strong></span>
+  </div>
+
+  <!-- ============ §1 鉴权 ============ -->
+  <div class="section">
+    <div class="section-title">
+      <span class="badge post">POST</span>
+      §1 鉴权登录 <span id="t1-status"></span>
+    </div>
+    <div class="section-desc">
+      POST /api/auth/login · 获取 access_token + refresh_token（系统级 JWT）
+    </div>
+    <div class="button-row">
+      <button onclick="t1_login()">① 登录</button>
+      <button class="secondary" onclick="t1_me()">② /api/auth/me 验证</button>
+      <button class="secondary" onclick="t1_logout()">③ 登出</button>
+    </div>
+    <pre class="output" id="t1-out">— 等待执行 —</pre>
+  </div>
+
+  <!-- ============ §2 项目管理 ============ -->
+  <div class="section">
+    <div class="section-title">
+      <span class="badge get">GET</span>
+      <span class="badge post">POST</span>
+      §2 项目管理 <span id="t2-status"></span>
+    </div>
+    <div class="section-desc">
+      /api/api/admin/v1/projects · 注意双重 /api 前缀（全局前缀 + Controller 前缀）
+    </div>
+    <div class="button-row">
+      <button onclick="t2_list()">① 列出项目</button>
+      <button onclick="t2_create()">② 创建测试项目</button>
+      <button class="secondary" onclick="t2_useFirst()">③ 使用第一个项目 ID</button>
+    </div>
+    <pre class="output" id="t2-out">— 等待执行 —</pre>
+  </div>
+
+  <!-- ============ §3 中转（路由）创建 ============ -->
+  <div class="section">
+    <div class="section-title">
+      <span class="badge post">POST</span>
+      §3 中转（路由）创建 <span id="t3-status"></span>
+    </div>
+    <div class="section-desc">
+      POST /api/api/admin/v1/routes · 创建同步中转，environment=prod, method=POST, path=/test
+    </div>
+    <div class="button-row">
+      <button onclick="t3_create()">① 创建中转</button>
+      <button class="secondary" onclick="t3_list()">② 列出项目路由</button>
+      <button class="secondary" onclick="t3_useFirst()">③ 使用第一个路由 ID</button>
+    </div>
+    <pre class="output" id="t3-out">— 等待执行 —</pre>
+  </div>
+
+  <!-- ============ §4 Mock 模式 ============ -->
+  <div class="section">
+    <div class="section-title">
+      <span class="badge put">PUT</span>
+      <span class="badge post">POST</span>
+      §4 Mock 模式（核心特性） <span id="t4-status"></span>
+    </div>
+    <div class="section-desc">
+      ① PUT /api/api/admin/v1/routes/:id 设置 is_mock=true + mock_response<br />
+      ② POST /v1/transit/:transitId/invoke 调用，应短路返回 mock_response，不触达下游
+    </div>
+    <div class="button-row">
+      <button onclick="t4_enableMock()">① 启用 Mock 模式</button>
+      <button onclick="t4_invokeMock()">② 调用网关（应返回 Mock）</button>
+      <button class="secondary" onclick="t4_disableMock()">③ 关闭 Mock 模式</button>
+    </div>
+    <pre class="output" id="t4-out">— 等待执行 —</pre>
+  </div>
+
+  <!-- ============ §5 网关入口调用 ============ -->
+  <div class="section">
+    <div class="section-title">
+      <span class="badge post">POST</span>
+      §5 网关入口调用（transitId 模型） <span id="t5-status"></span>
+    </div>
+    <div class="section-desc">
+      POST /v1/transit/:transitId/invoke · 不走 /api 前缀，走网关入口
+    </div>
+    <div class="button-row">
+      <button onclick="t5_invoke()">① 调用网关（无 Mock）</button>
+      <button class="secondary" onclick="t5_invokeNotExist()">② 调用不存在的 transitId（应 404）</button>
+    </div>
+    <pre class="output" id="t5-out">— 等待执行 —</pre>
+  </div>
+
+  <!-- ============ §6 微信小程序配置 ============ -->
+  <div class="section">
+    <div class="section-title">
+      <span class="badge put">PUT</span>
+      <span class="badge get">GET</span>
+      §6 微信小程序配置 <span id="t6-status"></span>
+    </div>
+    <div class="section-desc">
+      /api/api/admin/v1/projects/:projectId/wx-config · AppSecret + JWTSecret 必须 AES-256-GCM 加密落盘<br />
+      响应脱敏，仅返回 has_app_secret / has_jwt_secret 标志
+    </div>
+    <div class="button-row">
+      <button onclick="t6_upsert()">① 创建/更新微信配置</button>
+      <button class="secondary" onclick="t6_get()">② 查询微信配置（脱敏）</button>
+      <button class="danger" onclick="t6_delete()">③ 删除微信配置</button>
+    </div>
+    <pre class="output" id="t6-out">— 等待执行 —</pre>
+  </div>
+
+  <!-- ============ §7 微信登录链路 ============ -->
+  <div class="section">
+    <div class="section-title">
+      <span class="badge post">POST</span>
+      §7 微信登录链路（项目级 JWT） <span id="t7-status"></span>
+    </div>
+    <div class="section-desc">
+      POST /v1/transit/:transitId/auth/wx · @Public 接口，跳过系统 JWT 鉴权<br />
+      预期：调用微信 jscode2session 失败（无真实 AppID），返回 WX_LOGIN_FAILED
+    </div>
+    <div class="button-row">
+      <button onclick="t7_wxLogin()">① 微信登录（mock wxCode）</button>
+      <button class="secondary" onclick="t7_wxLoginNoCode()">② 不带 wxCode（应 400）</button>
+    </div>
+    <pre class="output" id="t7-out">— 等待执行 —</pre>
+  </div>
+
+  <!-- ============ §8 Live-Console 监控 ============ -->
+  <div class="section">
+    <div class="section-title">
+      <span class="badge get">GET</span>
+      §8 Live-Console 监控统计 <span id="t8-status"></span>
+    </div>
+    <div class="section-desc">
+      /api/api/admin/v1/projects/:projectId/logs · 聚合统计 + 分页查询<br />
+      P95 用 PostgreSQL PERCENTILE_CONT(0.95) 计算
+    </div>
+    <div class="button-row">
+      <button onclick="t8_stats()">① 拉取聚合统计</button>
+      <button class="secondary" onclick="t8_listLogs()">② 分页查询日志</button>
+    </div>
+    <pre class="output" id="t8-out">— 等待执行 —</pre>
+  </div>
+
+  <div class="footer">
+    提示：所有请求直接打到后端 <code>http://localhost:13000</code>，需要后端已启动 CORS（main.ts 已开 origin: '*'）。
+    若前端通过 Vite 代理调试，可改为相对路径 <code>/api</code>，但本工具页默认直连后端便于隔离测试。
+  </div>
+
+<script>
+/* ============================================================
+ * 全局状态
+ * ============================================================ */
+const State = {
+  token: localStorage.getItem('ddt_test_token') || '',
+  projectId: '',
+  transitId: '',
+};
+
+/* ============================================================
+ * 工具函数
+ * ============================================================ */
+function $(id) { return document.getElementById(id); }
+
+function baseUrl() { return $('baseUrl').value.replace(/\/$/, ''); }
+
+function getAuthHeaders() {
+  return State.token ? { Authorization: `Bearer ${State.token}` } : {};
+}
+
+/**
+ * 统一请求封装
+ * @param {string} method - HTTP 方法
+ * @param {string} path - 路径（不含 baseUrl，含 /api 前缀）
+ * @param {object} [body] - 请求体
+ * @param {object} [extraHeaders] - 额外 headers
+ */
+async function req(method, path, body, extraHeaders = {}) {
+  const url = baseUrl() + path;
+  const headers = { 'Content-Type': 'application/json', ...getAuthHeaders(), ...extraHeaders };
+  const opts = { method, headers };
+  if (body !== undefined && body !== null) opts.body = JSON.stringify(body);
+
+  const res = { ok: false, status: 0, data: null, error: null };
+  try {
+    const resp = await fetch(url, opts);
+    res.status = resp.status;
+    res.ok = resp.ok;
+    const text = await resp.text();
+    try { res.data = text ? JSON.parse(text) : null; }
+    catch { res.data = text; }
+  } catch (e) {
+    res.error = e.message;
+  }
+  return res;
+}
+
+/** 渲染输出到指定 pre 元素 */
+function render(elId, res, title) {
+  const el = $(elId);
+  if (!el) return;
+  const status = res.status ? `HTTP ${res.status}` : (res.error ? 'NETWORK ERROR' : '?');
+  const ok = res.ok;
+  const pretty = JSON.stringify({
+    title: title || '',
+    status,
+    ok,
+    data: res.data,
+    error: res.error,
+  }, null, 2);
+  el.textContent = pretty;
+  el.className = 'output ' + (ok ? 'success' : 'error');
+}
+
+/** 设置状态徽章 */
+function setBadge(id, ok) {
+  const el = $(id);
+  if (!el) return;
+  el.className = 'status-pill ' + (ok ? 'ok' : 'fail');
+  el.textContent = ok ? '✓ OK' : '✗ FAIL';
+}
+
+/** 更新全局状态栏 */
+function refreshStateBar() {
+  $('tokenView').textContent = State.token ? State.token.substring(0, 30) + '...' : '—';
+  $('projectView').textContent = State.projectId || '—';
+  $('transitView').textContent = State.transitId || '—';
+  $('projectId').value = State.projectId;
+  $('transitId').value = State.transitId;
+  const pill = $('globalStatus');
+  if (State.token) {
+    pill.className = 'status-pill ok';
+    pill.textContent = '已登录';
+  } else {
+    pill.className = 'status-pill pending';
+    pill.textContent = '未登录';
+  }
+  localStorage.setItem('ddt_test_token', State.token);
+}
+
+function clearAllOutputs() {
+  document.querySelectorAll('pre.output').forEach(el => {
+    el.textContent = '— 已清空 —';
+    el.className = 'output';
+  });
+  document.querySelectorAll('.status-pill[id]').forEach(el => {
+    el.className = 'status-pill pending';
+    el.textContent = '';
+  });
+}
+
+function copyToken() {
+  if (!State.token) { alert('当前无 Token'); return; }
+  navigator.clipboard.writeText(State.token).then(() => alert('Token 已复制'));
+}
+
+/** 短延时，便于观察串行过程 */
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+/* ============================================================
+ * §1 鉴权登录
+ * ============================================================ */
+async function t1_login() {
+  const body = { username: $('username').value, password: $('password').value };
+  const res = await req('POST', '/api/auth/login', body);
+  render('t1-out', res, 'POST /api/auth/login');
+  if (res.ok && res.data?.success && res.data?.data?.access_token) {
+    State.token = res.data.data.access_token;
+    refreshStateBar();
+    setBadge('t1-status', true);
+  } else {
+    setBadge('t1-status', false);
+  }
+}
+
+async function t1_me() {
+  const res = await req('GET', '/api/auth/me');
+  render('t1-out', res, 'GET /api/auth/me');
+  setBadge('t1-status', res.ok);
+}
+
+async function t1_logout() {
+  const res = await req('POST', '/api/auth/logout');
+  render('t1-out', res, 'POST /api/auth/logout');
+  if (res.ok) {
+    State.token = '';
+    refreshStateBar();
+  }
+  setBadge('t1-status', res.ok);
+}
+
+/* ============================================================
+ * §2 项目管理
+ * ============================================================ */
+async function t2_list() {
+  const res = await req('GET', '/api/api/admin/v1/projects');
+  render('t2-out', res, 'GET /api/api/admin/v1/projects');
+  setBadge('t2-status', res.ok);
+  return res;
+}
+
+async function t2_create() {
+  const body = {
+    name: `测试项目_${Date.now()}`,
+    description: 'test-harness 自动创建',
+  };
+  const res = await req('POST', '/api/api/admin/v1/projects', body);
+  render('t2-out', res, 'POST /api/api/admin/v1/projects');
+  if (res.ok && res.data?.success && res.data?.data?.id) {
+    State.projectId = res.data.data.id;
+    refreshStateBar();
+  }
+  setBadge('t2-status', res.ok);
+  return res;
+}
+
+async function t2_useFirst() {
+  const res = await t2_list();
+  if (res.ok && Array.isArray(res.data?.data) && res.data.data.length > 0) {
+    State.projectId = res.data.data[0].id;
+    refreshStateBar();
+  } else {
+    alert('未找到任何项目');
+  }
+}
+
+/* ============================================================
+ * §3 中转（路由）创建
+ * ============================================================ */
+async function t3_create() {
+  if (!State.projectId) { alert('请先创建或选择项目'); return; }
+  const body = {
+    project_id: State.projectId,
+    environment: 'prod',
+    method: 'POST',
+    path: `/test-${Date.now()}`,
+    is_async: false,
+    timeout_ms: 30000,
+  };
+  const res = await req('POST', '/api/api/admin/v1/routes', body);
+  render('t3-out', res, 'POST /api/api/admin/v1/routes');
+  if (res.ok && res.data?.success && res.data?.data?.id) {
+    State.transitId = res.data.data.id;
+    refreshStateBar();
+  }
+  setBadge('t3-status', res.ok);
+  return res;
+}
+
+async function t3_list() {
+  if (!State.projectId) { alert('请先选择项目'); return; }
+  const res = await req('GET', `/api/api/admin/v1/routes/project/${State.projectId}`);
+  render('t3-out', res, `GET /api/api/admin/v1/routes/project/${State.projectId}`);
+  setBadge('t3-status', res.ok);
+  return res;
+}
+
+async function t3_useFirst() {
+  const res = await t3_list();
+  if (res.ok && Array.isArray(res.data?.data) && res.data.data.length > 0) {
+    State.transitId = res.data.data[0].id;
+    refreshStateBar();
+  } else {
+    alert('未找到任何路由');
+  }
+}
+
+/* ============================================================
+ * §4 Mock 模式
+ * ============================================================ */
+async function t4_enableMock() {
+  if (!State.transitId) { alert('请先创建或选择中转'); return; }
+  const mockResponse = {
+    code: 0,
+    message: 'mock_response_from_test_harness',
+    data: { foo: 'bar', ts: Date.now() },
+    _meta: { mocked: true },
+  };
+  const body = { is_mock: true, mock_response: mockResponse };
+  const res = await req('PUT', `/api/api/admin/v1/routes/${State.transitId}`, body);
+  render('t4-out', res, `PUT /api/api/admin/v1/routes/${State.transitId} (启用 Mock)`);
+  setBadge('t4-status', res.ok);
+  return res;
+}
+
+async function t4_disableMock() {
+  if (!State.transitId) { alert('请先选择中转'); return; }
+  const body = { is_mock: false, mock_response: null };
+  const res = await req('PUT', `/api/api/admin/v1/routes/${State.transitId}`, body);
+  render('t4-out', res, `PUT /api/api/admin/v1/routes/${State.transitId} (关闭 Mock)`);
+  setBadge('t4-status', res.ok);
+  return res;
+}
+
+async function t4_invokeMock() {
+  if (!State.transitId) { alert('请先选择中转'); return; }
+  const body = { input: 'hello from test-harness' };
+  // 网关入口不走 /api 前缀
+  const res = await req('POST', `/v1/transit/${State.transitId}/invoke`, body);
+  render('t4-out', res, `POST /v1/transit/${State.transitId}/invoke (期望返回 mock_response)`);
+
+  // 验证是否命中 mock
+  const data = res.data?.data;
+  const isMockHit = data?._meta?.mocked === true || data?.message === 'mock_response_from_test_harness';
+  setBadge('t4-status', res.ok && isMockHit);
+  return res;
+}
+
+/* ============================================================
+ * §5 网关入口调用
+ * ============================================================ */
+async function t5_invoke() {
+  if (!State.transitId) { alert('请先创建或选择中转'); return; }
+  const body = { input: 'normal invoke without mock', ts: Date.now() };
+  const res = await req('POST', `/v1/transit/${State.transitId}/invoke`, body);
+  render('t5-out', res, `POST /v1/transit/${State.transitId}/invoke`);
+  // 无下游时可能 502/504，属预期行为
+  setBadge('t5-status', res.status !== 404);
+  return res;
+}
+
+async function t5_invokeNotExist() {
+  const fakeId = '00000000-0000-0000-0000-000000000000';
+  const res = await req('POST', `/v1/transit/${fakeId}/invoke`, { test: 1 });
+  render('t5-out', res, `POST /v1/transit/${fakeId}/invoke (期望 404 ROUTE_NOT_FOUND)`);
+  setBadge('t5-status', res.status === 404 || res.data?.error?.code === 'ROUTE_NOT_FOUND');
+  return res;
+}
+
+/* ============================================================
+ * §6 微信小程序配置
+ * ============================================================ */
+async function t6_upsert() {
+  if (!State.projectId) { alert('请先选择项目'); return; }
+  const appId = $('wxAppId').value || `test_appid_${Date.now()}`;
+  // 64 字符 hex（前端 crypto.getRandomValues 模拟生成）
+  const jwtSecret = Array.from(crypto.getRandomValues(new Uint8Array(32)))
+    .map(b => b.toString(16).padStart(2, '0')).join('');
+  const body = {
+    app_id: appId,
+    app_secret: `mock_app_secret_${Date.now()}`,
+    jwt_secret: jwtSecret,
+  };
+  const res = await req('PUT', `/api/api/admin/v1/projects/${State.projectId}/wx-config`, body);
+  render('t6-out', res, `PUT /wx-config (脱敏响应)`);
+  setBadge('t6-status', res.ok);
+  return res;
+}
+
+async function t6_get() {
+  if (!State.projectId) { alert('请先选择项目'); return; }
+  const res = await req('GET', `/api/api/admin/v1/projects/${State.projectId}/wx-config`);
+  render('t6-out', res, `GET /wx-config (脱敏，仅 has_app_secret/has_jwt_secret)`);
+  setBadge('t6-status', res.ok);
+  return res;
+}
+
+async function t6_delete() {
+  if (!State.projectId) { alert('请先选择项目'); return; }
+  const res = await req('DELETE', `/api/api/admin/v1/projects/${State.projectId}/wx-config`);
+  render('t6-out', res, `DELETE /wx-config`);
+  setBadge('t6-status', res.ok);
+  return res;
+}
+
+/* ============================================================
+ * §7 微信登录链路
+ * ============================================================ */
+async function t7_wxLogin() {
+  if (!State.transitId) { alert('请先选择中转'); return; }
+  const body = { wxCode: `mock_wx_code_${Date.now()}`, userId: 'test_user_001' };
+  const res = await req('POST', `/v1/transit/${State.transitId}/auth/wx`, body);
+  render('t7-out', res, `POST /v1/transit/${State.transitId}/auth/wx (期望 jscode2session 失败)`);
+  // 无真实 AppID，预期失败但接口能响应
+  setBadge('t7-status', res.status !== 500 && res.data?.error);
+  return res;
+}
+
+async function t7_wxLoginNoCode() {
+  if (!State.transitId) { alert('请先选择中转'); return; }
+  const res = await req('POST', `/v1/transit/${State.transitId}/auth/wx`, {});
+  render('t7-out', res, `POST /v1/transit/${State.transitId}/auth/wx (期望 400 INVALID_ARGUMENT)`);
+  setBadge('t7-status', res.status === 400);
+  return res;
+}
+
+/* ============================================================
+ * §8 Live-Console 监控
+ * ============================================================ */
+async function t8_stats() {
+  if (!State.projectId) { alert('请先选择项目'); return; }
+  const res = await req('GET', `/api/api/admin/v1/projects/${State.projectId}/logs/stats?sinceHours=24`);
+  render('t8-out', res, `GET /logs/stats (P95 用 PERCENTILE_CONT 计算)`);
+  setBadge('t8-status', res.ok);
+  return res;
+}
+
+async function t8_listLogs() {
+  if (!State.projectId) { alert('请先选择项目'); return; }
+  const res = await req('GET', `/api/api/admin/v1/projects/${State.projectId}/logs?limit=20&offset=0`);
+  render('t8-out', res, `GET /logs?limit=20&offset=0`);
+  setBadge('t8-status', res.ok);
+  return res;
+}
+
+/* ============================================================
+ * 一键串行全链路
+ * ============================================================ */
+async function runAllSequential() {
+  if (!confirm('将依次执行 §1→§8 共 11 个用例，需 ~30s。继续？')) return;
+  clearAllOutputs();
+  console.log('[Test-Harness] 开始串行全链路测试');
+
+  // 1. 登录
+  await t1_login();
+  if (!State.token) { alert('登录失败，终止'); return; }
+  await sleep(300);
+
+  // 2. 列项目（若有则复用，否则创建）
+  let r = await t2_list();
+  if (r.ok && Array.isArray(r.data?.data) && r.data.data.length > 0) {
+    State.projectId = r.data.data[0].id;
+    refreshStateBar();
+  } else {
+    await t2_create();
+  }
+  if (!State.projectId) { alert('无项目可用，终止'); return; }
+  await sleep(300);
+
+  // 3. 创建中转
+  await t3_create();
+  if (!State.transitId) { alert('创建中转失败，终止'); return; }
+  await sleep(300);
+
+  // 4. Mock 模式（启用 → 调用 → 关闭）
+  await t4_enableMock();
+  await sleep(200);
+  await t4_invokeMock();
+  await sleep(200);
+  await t4_disableMock();
+  await sleep(300);
+
+  // 5. 网关入口（正常 + 404）
+  await t5_invoke();
+  await sleep(200);
+  await t5_invokeNotExist();
+  await sleep(300);
+
+  // 6. 微信配置
+  await t6_upsert();
+  await sleep(200);
+  await t6_get();
+  await sleep(300);
+
+  // 7. 微信登录
+  await t7_wxLoginNoCode();
+  await sleep(200);
+  await t7_wxLogin();
+  await sleep(300);
+
+  // 8. Live-Console
+  await t8_stats();
+  await sleep(200);
+  await t8_listLogs();
+
+  console.log('[Test-Harness] 全链路测试完成');
+  alert('✅ 全链路测试完成，请逐节查看输出');
+}
+
+/* ============================================================
+ * 初始化
+ * ============================================================ */
+refreshStateBar();
+</script>
+</body>
+</html>

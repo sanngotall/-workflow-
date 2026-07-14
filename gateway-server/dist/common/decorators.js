@@ -1,0 +1,20 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.ProjectIdParam = exports.SelfOrPermission = exports.RequireGlobalRole = exports.RequirePermission = exports.Public = exports.PROJECT_ID_PARAM_KEY = exports.SELF_OR_PERMISSION_KEY = exports.GLOBAL_ROLE_KEY = exports.PERMISSION_KEY = exports.IS_PUBLIC_KEY = void 0;
+const common_1 = require("@nestjs/common");
+exports.IS_PUBLIC_KEY = 'isPublic';
+exports.PERMISSION_KEY = 'permission';
+exports.GLOBAL_ROLE_KEY = 'globalRole';
+exports.SELF_OR_PERMISSION_KEY = 'selfOrPermission';
+exports.PROJECT_ID_PARAM_KEY = 'projectIdParam';
+const Public = () => (0, common_1.SetMetadata)(exports.IS_PUBLIC_KEY, true);
+exports.Public = Public;
+const RequirePermission = (permission) => (0, common_1.SetMetadata)(exports.PERMISSION_KEY, permission);
+exports.RequirePermission = RequirePermission;
+const RequireGlobalRole = (...roles) => (0, common_1.SetMetadata)(exports.GLOBAL_ROLE_KEY, roles);
+exports.RequireGlobalRole = RequireGlobalRole;
+const SelfOrPermission = (permission) => (0, common_1.SetMetadata)(exports.SELF_OR_PERMISSION_KEY, permission);
+exports.SelfOrPermission = SelfOrPermission;
+const ProjectIdParam = (paramName) => (0, common_1.SetMetadata)(exports.PROJECT_ID_PARAM_KEY, paramName);
+exports.ProjectIdParam = ProjectIdParam;
+//# sourceMappingURL=decorators.js.map
